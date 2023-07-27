@@ -3,11 +3,12 @@ Description=OLED display
 After=multi-user.target
 
 [Service]
-ExecStart=rm -f /home/pi/oled && /usr/bin/python3 /home/pi/sztehlo-telescope/python/oled.py
+ExecStart=/usr/bin/python3 /home/pi/sztehlo-telescope/python/oled.py
 Restart=always
 RestartSec=5s
 KillMode=process
 TimeoutSec=infinity
+User=pi
 
 [Install]
 WantedBy=multi-user.target

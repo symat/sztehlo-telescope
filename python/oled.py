@@ -123,7 +123,8 @@ checking_thread.start()
 
 
 FIFO = '/home/pi/oled'
-os.mkfifo(FIFO)
+if not os.path.exists(FIFO):
+    os.mkfifo(FIFO)
 while True:
     with open(FIFO) as fifo:
         for line in fifo:
