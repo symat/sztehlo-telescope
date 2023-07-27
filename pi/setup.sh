@@ -19,3 +19,11 @@ sudo sed -i 's/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/g' /boot/config.txt
 # increase I2C bus speed to 1MHz
 #sudo sed -i 's/# Uncomment this to enable infrared communication./dtparam=i2c_baudrate=1000000\n\n# Uncomment this to enable infrared communication./g' /boot/config.txt
 
+sudo apt-get install -y git
+
+cd /home/pi/
+git clone https://github.com/symat/sztehlo-telescope.git
+
+sudo cp /home/pi/sztehlo-telescope/pi/oled.service /lib/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable oled.service

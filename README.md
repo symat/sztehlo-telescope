@@ -51,5 +51,5 @@ git clone https://github.com/symat/sztehlo-telescope.git
    - you can change password later: `passwd`
  - if WIFI doesn't work, copy the wpa_supplicant.conf (TODO link) file to the SD card
  - if you can ssh, but later you want to edit WIFI settings, or add more WIFI networks, edit the wpa_supplicant.conf  (TODO link)  file on the raspberry PI: `sudo vi /etc/wpa_supplicant/wpa_supplicant.conf`
- - run first-time setup: `sudo wget`
+ - run first-time setup: `wget -O - https://raw.githubusercontent.com/symat/sztehlo-telescope/main/pi/setup.sh | bash`
    
