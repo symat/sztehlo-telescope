@@ -1,1 +1,3 @@
 pi/* eol=lf
+**/*.gcode eol=lf
+

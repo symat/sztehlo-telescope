@@ -1,0 +1,1 @@
+original files downloaded from: https://www.bigbigspace.com/telescope/n606-newtonian-reflector
