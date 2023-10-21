@@ -57,8 +57,8 @@ def postMessage(id):
     if "ip" not in json and "message" not in json:
         abort(400) 
     currentMessageLines[idNum]["ip"] = json["ip"]
-    allMessages = currentMessageLines[idNum]["messages"].extend(messageToLines(json["message"]))
-    currentMessageLines[idNum]["messages"] = allMessages[- maxHeight :]
+    currentMessageLines[idNum]["messages"].extend(messageToLines(json["message"]))
+    currentMessageLines[idNum]["messages"] = currentMessageLines[idNum]["messages"][- maxHeight :]
     return ""
 
 
