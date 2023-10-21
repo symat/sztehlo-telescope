@@ -26,14 +26,13 @@ def messageToLines(message):
    
 currentMessageLines = {}
 for i in range(boxNum):
-    currentMessageLines[i+1] = messageToLines(initialText)
-
+    currentMessageLines[i+1] = { "ip": "n/a", "messages": messageToLines(initialText) } 
 
 @app.get("/")
 def index():
     oleds = ""
     for id in range(boxNum):
-        oleds += render_template('oled.html', id=id+1, initialText=initialText)
+        oleds += render_template('oled.html', id=id+1, initialText="", ip="n/a")
     return render_template("index.html", oleds=oleds)
 
 
@@ -50,7 +49,15 @@ def postMessage(id):
     if idNum < 1 or idNum > boxNum:
         abort(400)
     
-    currentMessageLines[idNum].extend(messageToLines(request.get_data(as_text=True)))
+    content_type = request.headers.get('Content-Type')
+    if content_type != 'application/json':
+        abort(400)
+    
+    json = request.json
+    if "ip" not in json and "message" not in json:
+        abort(400) 
+    currentMessageLines[idNum]["ip"] = json["ip"]
+    currentMessageLines[idNum]["messages"].extend(messageToLines(json["message"]))
     return ""
 
 

@@ -3,7 +3,8 @@ Description=PI OLED display server service
 After=multi-user.target
 
 [Service]
-ExecStart=cd /home/pi/sztehlo-telescope/python/oled-web-server/; flask --app oled-web-server run --debug --host=0.0.0.0
+WorkingDirectory=/home/pi/git/sztehlo-telescope/python/oled-web-server
+ExecStart=/usr/bin/python3 -m flask --app oled-web-server run --host=0.0.0.0
 Restart=always
 RestartSec=5s
 KillMode=process

@@ -27,14 +27,16 @@ escapeHTML = function (string) {
 
 
 const refresh = async function () {
-    $.ajax({
+    $.getJSON({
         url: "/messages",
         success: function (result) {
             console.log(result)
             for (id = 1; id <= maxItemsToFetch; id++) {
-                const lines = result[id].slice(-maxLines);
+                const lines = result[id].messages.slice(-maxLines);
                 const html = lines.map(escapeHTML).join("<br/>");
                 $("#messages-" + id).html(html);
+                const ip = escapeHTML(result[id].ip);
+                $("#ip-" + id).html(ip);
             }
         },
         error: function (xhr, status, error) {
