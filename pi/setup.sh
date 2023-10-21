@@ -33,4 +33,8 @@ sudo systemctl enable oled.service
 # install web server 
 pip3 install Flask --break-system-packages
 
+sleep 60
+
+sudo reboot
+
 
