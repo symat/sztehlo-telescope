@@ -8,11 +8,92 @@ import netifaces
 import ipaddress
 import socket
 import os
-import sys
+import requests
 from PIL import Image, ImageDraw, ImageFont
 from collections import deque
 import threading
 import subprocess
+import re
+
+HOST_REGEXP = r"\w+-(\d+)"
+BORDER = 2
+PI_BOARD_HOST = "http://gumicsizma.dyndns.org:5000"
+
+
+
+class TelescopeOled:
+    def __init__(self):
+        i2c = busio.I2C(board.SCL, board.SDA)
+        reset_pin = digitalio.DigitalInOut(board.D4)
+        reset_pin.switch_to_output()
+        reset_pin.value = False
+        time.sleep(0.1)
+        reset_pin.value = True
+        time.sleep(0.1)
+
+        self.oled = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c, addr=0x3c)
+
+        # Clear display.
+        self.oled.fill(0)
+        self.oled.show()
+
+        # Create blank image for drawing.
+        # Make sure to create image with mode '1' for 1-bit color.
+        self.image = Image.new("1", (self.oled.width, self.oled.height))
+
+        # Get drawing object to draw on image.
+        self.draw = ImageDraw.Draw(self.image)
+
+        # Draw a white background
+        self.draw.rectangle((0, 0, self.oled.width, self.oled.height), outline=255, fill=255)
+
+        # Draw a smaller inner rectangle
+        self.draw.rectangle(
+            (BORDER, BORDER, self.oled.width - BORDER - 1, self.oled.height - BORDER - 1),
+            outline=0,
+            fill=0,
+        )
+
+        self.updateHeader()
+
+        # Load default font.
+        self.font = ImageFont.load_default()
+        (self.font_width, self.font_height) = self.font.getsize("H")
+
+        self.number_of_rows = (64 - 4 * BORDER) / self.font_height
+        self.start_x = 2 * BORDER
+        self.start_y = 2 * BORDER
+
+
+    def getNumberOfLinesAllowed(self):
+        return self.number_of_rows - len(self.header)
+    
+    def updateHeader(self):
+        self.header = [
+            "HOST: " + socket.gethostname(),
+            "IP: " + get_ip_text()
+        ]
+
+    def redraw(self, lines):
+        self.draw.rectangle(
+            (BORDER, BORDER, self.oled.width - BORDER - 1, self.oled.height - BORDER - 1),
+            outline=0,
+            fill=0,)
+        self.draw.rectangle(
+            (BORDER, BORDER, self.oled.width - BORDER - 1, self.start_y + len(self.header) * self.font_height),
+            outline=255,
+            fill=255,)
+        y = self.start_y
+        for line in self.header:
+            self.draw.text((self.start_x, y), line, font=self.font, fill=0)
+            y += self.font_height
+        for line in lines:
+            self.draw.text((self.start_x, y), line, font=self.font, fill=255)
+            y += self.font_height
+
+        # Display image
+        self.oled.image(self.image)
+        self.oled.show()
 
 
 
@@ -29,90 +110,30 @@ def get_local_non_loopback_ipv4_addresses():
 def get_ip_text():
     return ','.join(list(get_local_non_loopback_ipv4_addresses()))
 
+def get_hostname_postfix():
+    result = re.search(HOST_REGEXP, socket.gethostname())
+    if len(result.groups()) > 0:
+        return int(result.group(1))
+    return 0
 
 
-BORDER = 2
 
-i2c = busio.I2C(board.SCL, board.SDA)
-reset_pin = digitalio.DigitalInOut(board.D4)
-reset_pin.switch_to_output()
-reset_pin.value = False
-time.sleep(0.1)
-reset_pin.value = True
-time.sleep(0.1)
-
-oled = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c, addr=0x3c)
-
-# Clear display.
-oled.fill(0)
-oled.show()
-
-# Create blank image for drawing.
-# Make sure to create image with mode '1' for 1-bit color.
-image = Image.new("1", (oled.width, oled.height))
-
-# Get drawing object to draw on image.
-draw = ImageDraw.Draw(image)
-
-# Draw a white background
-draw.rectangle((0, 0, oled.width, oled.height), outline=255, fill=255)
-
-# Draw a smaller inner rectangle
-draw.rectangle(
-    (BORDER, BORDER, oled.width - BORDER - 1, oled.height - BORDER - 1),
-    outline=0,
-    fill=0,
-)
-
-# Load default font.
-font = ImageFont.load_default()
-(font_width, font_height) = font.getsize("H")
-
-number_of_rows = (64 - 4 * BORDER) / font_height
-start_x = 2 * BORDER
-start_y = 2 * BORDER
-
-
-header = [
-    "HOST: " + socket.gethostname(),
-    "IP: " + get_ip_text()
-]
 lines = deque(["", "Hello!"])
-
-def redraw(lines):
-    draw.rectangle(
-        (BORDER, BORDER, oled.width - BORDER - 1, oled.height - BORDER - 1),
-        outline=0,
-        fill=0,)
-    draw.rectangle(
-        (BORDER, BORDER, oled.width - BORDER - 1, start_y + len(header) * font_height),
-        outline=255,
-        fill=255,)
-    y = start_y
-    for line in header:
-        draw.text((start_x, y), line, font=font, fill=0)
-        y += font_height
-    for line in lines:
-        draw.text((start_x, y), line, font=font, fill=255)
-        y += font_height
-
-    # Display image
-    oled.image(image)
-    oled.show()
-
-
-
-redraw(lines)
+telescopeOled = None
 
 def check_oled():
     while True:
-        time.sleep(1)
         completedProc = subprocess.run(['i2cget', '-y', '1', '0x3c'],
                                        stdout=subprocess.DEVNULL,
                                        stderr=subprocess.STDOUT)
-        if completedProc.returncode != 0:
-            print("unable to communicate on I2C, will return")
-            os._exit(1)
+        if completedProc.returncode == 0 and telescopeOled == None:
+            print("I2C device found, will start to display")
+            telescopeOled = TelescopeOled()
+            telescopeOled.redraw(lines)
+        if completedProc.returncode != 0 and telescopeOled != None:
+            print("unable to communicate on I2C, will stop displaying")
+            telescopeOled = None
+        time.sleep(5)
 
 checking_thread = threading.Thread(target=check_oled)
 checking_thread.daemon = True
@@ -121,6 +142,13 @@ print("Starting oled checking thread")
 checking_thread.start()
 
 
+def sendMessageToBoard(hostId, ip, message):
+    requests.post(PI_BOARD_HOST+'/messages/'+hostId, json={"ip": ip, "message": message})
+
+
+
+hostId = get_hostname_postfix()
+ip = get_ip_text()
 
 FIFO = '/home/pi/oled'
 if not os.path.exists(FIFO):
@@ -129,7 +157,12 @@ while True:
     with open(FIFO) as fifo:
         for line in fifo:
             lines.append(line)
-            while len(lines) > number_of_rows - len(header):
+            allowedLines = 5
+            if telescopeOled != None:
+                allowedLines = telescopeOled.getNumberOfLinesAllowed()
+            while len(lines) > allowedLines:
                 lines.popleft()
-            redraw(lines)
+            if telescopeOled != None:
+                telescopeOled.redraw(lines)
+            sendMessageToBoard(hostId, ip, line)
 
