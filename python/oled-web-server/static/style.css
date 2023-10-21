@@ -1,0 +1,60 @@
+body {
+    background-color: rgb(207, 234, 243);
+    font-family: "Lucida Console", "Courier New", monospace;
+}
+
+h1 {
+    color: navy;
+    margin-left: 20px;
+    text-align: center;
+    align-content: center;
+}
+
+.content {
+    display: flex;
+    align-items: center;
+
+}
+
+/*
+.oled-grid {
+     
+}*/ 
+
+.oled {
+    background-color: rgb(0, 0, 0);
+    color: white;
+    text-align: left;
+
+    font-weight: bold;
+    --lh: 1.4rem;
+    margin: 0.5rem;
+    line-height: var(--lh);
+    padding: 0.5rem;
+
+}
+
+.oled-header {
+    /*clear: left;*/
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    height: 1rem;
+}
+
+.oled-messages {
+    background-color: rgb(19, 41, 88);
+    overflow: hidden;
+    --min-lines: 3;
+    --min-chars: 30;
+    min-height: calc(var(--lh) * var(--min-lines));
+    min-width: calc(var(--lh) * var(--min-chars) / 2.1);
+    font-weight: normal;
+}
+
+.hostname {
+    float: left;
+}
+
+.ip {
+    float: right;
+}

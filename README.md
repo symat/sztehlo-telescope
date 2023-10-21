@@ -18,9 +18,11 @@
  - git.exe path: C:\Program Files\Git\bin
 
 ## clone sztehlo-telescope reopsitory:
+```
 start git bash
 cd /c/git
 git clone https://github.com/symat/sztehlo-telescope.git
+```
 
 ## download python on your machine
 - download and use pythonn 3.9 (this is the version used on the PI currently): https://www.python.org/downloads
@@ -36,20 +38,52 @@ git clone https://github.com/symat/sztehlo-telescope.git
 	   - set hostname: telescope-1 
 	   - set username: pi
 	   - set password: ... (don't forget!)
-	   - configure WIFI
 	   - set local (hungarian keyboard)
+	   - these would be nice, but doesn't work for some reason to me on the OS light version:
+	      - configure WIFI
+	      - enable ssh with passwork aduthentication
+       - disabling the “Eject media when finished” (was recommended on posts)
 	- write
- - add empty `ssh` file to enable ssh`
- - add `wpa_supplicant.conf` to setup WIFI (see example HERE)
- - start the PI with the SD card
- - find out the IP (e.g. port scanner, or router admin)
+   - wait for the `firstrun.sh` to appear on the card before ejecting
+ - start the PI with the SD card, attach HDMI and keyboard (start takes 5-6 minutes, will restart multiple times) and add the wpa config manually
+ - or if WIFI connection worked, then find out the IP (e.g. port scanner, or router admin)
  
 
+if you need to add / change WPA config:
+```
+sudo nano /etc/wpa_supplicant/wpa_supplicant.conf
+
+'''
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+country=HU
+
+network={
+     ssid="Sztehlo_Diak"
+     psk="REDACTED"
+     key_mgmt=WPA-PSK
+     id_str="school"
+}
+'''
+
+sudo service wpa_supplicant restart
+
+ifconfig
+```
+
+## SSH to the pi, using mingw + ssh
  - start git bash and ssh to the IP
    - command like: `ssh pi@192.168.x.y`
    - user was `pi`, password was ...
    - you can change password later: `passwd`
  - if WIFI doesn't work, copy the wpa_supplicant.conf (TODO link) file to the SD card
  - if you can ssh, but later you want to edit WIFI settings, or add more WIFI networks, edit the wpa_supplicant.conf  (TODO link)  file on the raspberry PI: `sudo vi /etc/wpa_supplicant/wpa_supplicant.conf`
- - run first-time setup: `wget -O - https://raw.githubusercontent.com/symat/sztehlo-telescope/main/pi/setup.sh | bash`
-   
+
+ ## run first-time setup
+ `wget -O - https://raw.githubusercontent.com/symat/sztehlo-telescope/main/pi/setup.sh | bash`
+
+
+## test rapsberry py dashboard
+```
+ curl -X POST -H "Content-type: text/plain" -d $'test\nsomething' "http://127.0.0.1:5000/messages/1"
+```
