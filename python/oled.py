@@ -14,10 +14,12 @@ from collections import deque
 import threading
 import subprocess
 import re
+import sys
 
 HOST_REGEXP = r"\w+-(\d+)"
 BORDER = 2
 PI_BOARD_HOST = "http://gumicsizma.dyndns.org:5000"
+LINE_BUFFER_LENGTH = 10
 
 
 
@@ -122,17 +124,20 @@ lines = deque(["", "Hello!"])
 telescopeOled = None
 
 def check_oled():
+    global telescopeOled
     while True:
-        completedProc = subprocess.run(['i2cget', '-y', '1', '0x3c'],
-                                       stdout=subprocess.DEVNULL,
-                                       stderr=subprocess.STDOUT)
-        if completedProc.returncode == 0 and telescopeOled == None:
-            print("I2C device found, will start to display")
-            telescopeOled = TelescopeOled()
-            telescopeOled.redraw(lines)
-        if completedProc.returncode != 0 and telescopeOled != None:
-            print("unable to communicate on I2C, will stop displaying")
-            telescopeOled = None
+        try:
+            completedProc = subprocess.run(['i2cget', '-y', '1', '0x3c'],
+                                        stdout=subprocess.DEVNULL,
+                                        stderr=subprocess.STDOUT)
+            if completedProc.returncode == 0 and telescopeOled == None:
+                print("I2C device found, will start to display")
+                telescopeOled = TelescopeOled()
+            if completedProc.returncode != 0 and telescopeOled != None:
+                print("unable to communicate on I2C, will stop displaying")
+                telescopeOled = None
+        except Exception as e:
+            print(str(e))
         time.sleep(5)
 
 checking_thread = threading.Thread(target=check_oled)
@@ -142,13 +147,40 @@ print("Starting oled checking thread")
 checking_thread.start()
 
 
+def redraw_oled():
+    last_lines = deque([])
+    while True:
+        try:
+            if telescopeOled != None:
+                while len(lines) > telescopeOled.getNumberOfLinesAllowed():
+                    lines.popleft()
+                if last_lines != lines:
+                    last_lines = deque([])
+                    for line in lines:
+                        last_lines.append(line)
+                    telescopeOled.redraw(last_lines)
+            else:
+                while len(lines) > LINE_BUFFER_LENGTH:
+                    lines.popleft()
+        except Exception as e:
+            print(str(e))
+        time.sleep(0.3)
+
+
+redraw_thread = threading.Thread(target=redraw_oled)
+redraw_thread.daemon = True
+print("Starting oled refresh thread")
+redraw_thread.start()
+
 def sendMessageToBoard(hostId, ip, message):
-    requests.post(PI_BOARD_HOST+'/messages/'+hostId, json={"ip": ip, "message": message})
+    requests.post(PI_BOARD_HOST+'/messages/'+str(hostId), json={"ip": ip, "message": message})
 
 
 
 hostId = get_hostname_postfix()
 ip = get_ip_text()
+for line in lines:
+    sendMessageToBoard(hostId, ip, line)
 
 FIFO = '/home/pi/oled'
 if not os.path.exists(FIFO):
@@ -157,12 +189,5 @@ while True:
     with open(FIFO) as fifo:
         for line in fifo:
             lines.append(line)
-            allowedLines = 5
-            if telescopeOled != None:
-                allowedLines = telescopeOled.getNumberOfLinesAllowed()
-            while len(lines) > allowedLines:
-                lines.popleft()
-            if telescopeOled != None:
-                telescopeOled.redraw(lines)
             sendMessageToBoard(hostId, ip, line)
 

@@ -84,6 +84,14 @@ ifconfig
 
 
 ## test rapsberry py dashboard
+test the dashboard:
 ```
   curl.exe -X POST -H "Content-type: application/json" -d "{ \"ip\":\"192.168.111.222\", \"message\":\"hello world\\n__ wrap after 30 chars _______here___\"}" "http://127.0.0.1:5000/messages/1"
+```
+
+test on PI:
+```
+systemctl status oled
+echo "dfgsg" > /home/pi/oled
+echo -e 'multi\nline' > /home/pi/oled
 ```
