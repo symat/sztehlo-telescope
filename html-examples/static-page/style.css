@@ -1,0 +1,21 @@
+.main-container {
+    background-color: #0d5cae;
+    color: white;
+    padding-top: 50px;
+    padding-bottom: 50px;
+}
+
+.figure-caption {
+    color: white;
+}
+
+.progress-bar {
+    transition-duration: 0.01s;
+}
+
+
+.telescope-image {
+  width: 600px;
+  height: 450px;
+  object-fit: cover;
+}
