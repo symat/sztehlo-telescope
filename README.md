@@ -92,6 +92,15 @@ test the dashboard:
 test on PI:
 ```
 systemctl status oled
+journalctl -u oled
 echo "dfgsg" > /home/pi/oled
 echo -e 'multi\nline' > /home/pi/oled
 ```
+
+
+## connecting via USB (didn't work for me)
+
+https://www.makeuseof.com/how-to-connect-raspberry-pi-to-laptop-or-pc-usb/
+
+install bonjur
+install RNDIS driver

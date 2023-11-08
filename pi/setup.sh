@@ -16,6 +16,8 @@ pip3 install netifaces  --break-system-packages
 
 # enable i2c
 sudo sed -i 's/#dtparam=i2c_arm=on/dtparam=i2c_arm=on/g' /boot/config.txt
+sudo raspi-config nonint do_i2c 0
+
 
 # increase I2C bus speed to 1MHz
 #sudo sed -i 's/# Uncomment this to enable infrared communication./dtparam=i2c_baudrate=1000000\n\n# Uncomment this to enable infrared communication./g' /boot/config.txt
@@ -32,6 +34,7 @@ sudo systemctl enable oled.service
 
 # install web server 
 pip3 install Flask --break-system-packages
+
 
 sleep 60
 
