@@ -1,34 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Sztehlo távcső</title>
+    <head>
+        <meta charset="UTF-8">
+        <title>Sztehlo távcső</title>
+    </head>
 
+    <body>
+        <label for="positions">Távcső pozíció beállítás:</label>
+        <select id="positions" name="positions">
+            <option value="ursa_maior">Göncölszekér</option>
+            <option value="moon">Hold</option>
+            <option value="mars">Mars</option>
+            <option value="saturn">Szaturnusz</option>
+        </select>
 
-</head>
-<body>
+        <input type="checkbox" id="follow" name="follow" value="follow">
+        <label for="follow">Automatikus követés</label>
 
-<div> </div>
+        <button type="button">Pozícionálás</button>
 
+        <div><img src="ursa_maior.jpg"/></div>
 
-<label for="positions">Távcső pozíció beállítás:</label>
+        <button type="button">Fénykép készítése</button>
 
-<select id="positions" name="positions">
-  <option value="ursa_maior">Göncölszekér</option>
-  <option value="moon">Hold</option>
-  <option value="mars">Mars</option>
-  <option value="saturn">Szaturnusz</option>
-</select>
-
-<input type="checkbox" id="follow" name="follow" value="follow">
-  <label for="follow">Automatikus követés</label>
-
-<button type="button">Pozícionálás</button>
-
-<div><img src="ursa_maior.jpg"/> </div>
-
-<button type="button">Fénykép készítése</button>
-
-
-</body>
+    </body>
 </html>
