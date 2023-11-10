@@ -75,8 +75,8 @@ fi
 
 sudo echo "country=HU" >> /etc/wpa_supplicant/wpa_supplicant.conf
 sudo echo "network={" >> /etc/wpa_supplicant/wpa_supplicant.conf
-sudo echo "  ssid=\"Sztehlo_Diak\"" >> /etc/wpa_supplicant/wpa_supplicant.conf
-sudo echo "  psk=\"*****\"" >> /etc/wpa_supplicant/wpa_supplicant.conf
+sudo echo "  ssid=\"Inf1\"" >> /etc/wpa_supplicant/wpa_supplicant.conf
+sudo echo "  psk=\"Ra583rryP1\"" >> /etc/wpa_supplicant/wpa_supplicant.conf
 sudo echo "  key_mgmt=WPA-PSK" >> /etc/wpa_supplicant/wpa_supplicant.conf
 sudo echo "  id_str=\"school\"" >> /etc/wpa_supplicant/wpa_supplicant.conf
 sudo echo "}" >> /etc/wpa_supplicant/wpa_supplicant.conf

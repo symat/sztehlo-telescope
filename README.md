@@ -71,6 +71,13 @@ sudo service wpa_supplicant restart
 ifconfig
 ```
 
+But sometimes wpa_supplicant didn't work with me and e.g. to change the wifi network, I did change the wpa_supplicant.conf, plus also used networkManager:
+```
+sudo nmcli c delete "oldSSID"
+sudo nmcli device wifi con "newSSID" password "REDACTED"
+```
+Maybe we could remove the whole wpa_supplicant stuff from the firstrun.sh and switch fully to networkmanager?
+
 ## SSH to the pi, using mingw + ssh
  - start git bash and ssh to the IP
    - command like: `ssh pi@192.168.x.y`
