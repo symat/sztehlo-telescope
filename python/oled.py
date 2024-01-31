@@ -18,7 +18,7 @@ import sys
 
 HOST_REGEXP = r"\w+-(\d+)"
 BORDER = 2
-PI_BOARD_HOST = "http://gumicsizma.dyndns.org:5000"
+PI_BOARD_HOST = "http://gumicsizma.duckdns.org:5000"
 LINE_BUFFER_LENGTH = 10
 
 
