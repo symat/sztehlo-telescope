@@ -99,9 +99,16 @@ test the dashboard:
 test on PI:
 ```
 systemctl status oled
-journalctl -u oled
+journalctl -u oled -n 200
+journalctl -u oled -f
 echo "dfgsg" > /home/pi/oled
 echo -e 'multi\nline' > /home/pi/oled
+```
+
+if oled display not works, enable I2C manually:
+```
+sudo raspi-config
+go: Interfacing Options >> I2C >> enable ARM I2C interface
 ```
 
 

@@ -3,7 +3,7 @@ Description=OLED display service
 After=multi-user.target
 
 [Service]
-ExecStart=/usr/bin/python3 /home/pi/sztehlo-telescope/python/oled.py
+ExecStart=/usr/bin/python3 -u /home/pi/sztehlo-telescope/python/oled.py
 Restart=always
 RestartSec=5s
 KillMode=process
