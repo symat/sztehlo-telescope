@@ -21,18 +21,20 @@ BORDER = 2
 PI_BOARD_HOST = "http://gumicsizma.duckdns.org:5000"
 LINE_BUFFER_LENGTH = 10
 
+reset_pin = digitalio.DigitalInOut(board.D4)
+reset_pin.switch_to_output()
+
+def reset_oled():
+   reset_pin.value = False
+   time.sleep(0.2)
+   reset_pin.value = True
+   time.sleep(0.2)
+
 
 
 class TelescopeOled:
     def __init__(self):
         i2c = busio.I2C(board.SCL, board.SDA)
-        reset_pin = digitalio.DigitalInOut(board.D4)
-        reset_pin.switch_to_output()
-        reset_pin.value = False
-        time.sleep(0.1)
-        reset_pin.value = True
-        time.sleep(0.1)
-
         self.oled = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c, addr=0x3c)
 
         # Clear display.
@@ -62,13 +64,14 @@ class TelescopeOled:
         self.font = ImageFont.load_default()
         (self.font_width, self.font_height) = self.font.getsize("H")
 
-        self.number_of_rows = (64 - 4 * BORDER) / self.font_height
+        self.number_of_rows = (64 - 4 * BORDER) // self.font_height
         self.start_x = 2 * BORDER
         self.start_y = 2 * BORDER
 
 
+
     def getNumberOfLinesAllowed(self):
-        return self.number_of_rows - len(self.header)
+        return int(self.number_of_rows - len(self.header))
     
     def updateHeader(self):
         self.header = [
@@ -120,22 +123,31 @@ def get_hostname_postfix():
 
 
 
-lines = deque(["", "Hello!"])
+lines = deque(["", "Hello!"], maxlen=LINE_BUFFER_LENGTH)
 telescopeOled = None
 
 def check_oled():
     global telescopeOled
+    last_warn_minute = 0
     while True:
         try:
             completedProc = subprocess.run(['i2cget', '-y', '1', '0x3c'],
                                         stdout=subprocess.DEVNULL,
                                         stderr=subprocess.STDOUT)
             if completedProc.returncode == 0 and telescopeOled == None:
+                reset_oled()
                 print("I2C device found, will start to display")
                 telescopeOled = TelescopeOled()
-            if completedProc.returncode != 0 and telescopeOled != None:
-                print("unable to communicate on I2C, will stop displaying")
-                telescopeOled = None
+            if completedProc.returncode != 0:
+                if telescopeOled != None:
+                    print("unable to communicate on I2C, will stop displaying")
+                    telescopeOled = None
+                else:
+                    current_minute = time.time_ns() // 60000000000 
+                    if current_minute != last_warn_minute:
+                        print("still unable to communicate on I2C, waiting for oled display")
+                        last_warn_minute = current_minute
+                reset_oled()
         except Exception as e:
             print(str(e))
         time.sleep(5)
@@ -148,24 +160,32 @@ checking_thread.start()
 
 
 def redraw_oled():
-    last_lines = deque([])
+    last_lines = list()
+    last_change_time = 0
+    changed = False
+    min_wait_ns = 100000   # 0.1 sec
     while True:
         try:
             if telescopeOled != None:
-                while len(lines) > telescopeOled.getNumberOfLinesAllowed():
-                    lines.popleft()
-                if last_lines != lines:
-                    last_lines = deque([])
-                    for line in lines:
-                        last_lines.append(line)
+                current_lines = list(lines)[-telescopeOled.getNumberOfLinesAllowed():]
+                if last_lines != current_lines:
+                    last_lines = current_lines
+                    last_change_time = time.time_ns()
+                    changed = True
+                else: 
+                    time.sleep(0.02)
+
+                if changed and time.time_ns() - last_change_time > min_wait_ns: 
+                    changed = False
                     telescopeOled.redraw(last_lines)
+
             else:
-                while len(lines) > LINE_BUFFER_LENGTH:
-                    lines.popleft()
+                time.sleep(0.3)
         except Exception as e:
             print(str(e))
-        time.sleep(0.3)
+            time.sleep(1)
 
+        
 
 redraw_thread = threading.Thread(target=redraw_oled)
 redraw_thread.daemon = True
