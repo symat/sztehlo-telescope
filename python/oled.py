@@ -1,4 +1,3 @@
-
 import board
 import busio
 import adafruit_ssd1306
@@ -15,11 +14,22 @@ import threading
 import subprocess
 import re
 import sys
+from gpiozero import OutputDevice, InputDevice, MCP3008, Button
 
 HOST_REGEXP = r"\w+-(\d+)"
 BORDER = 2
 PI_BOARD_HOST = "http://gumicsizma.duckdns.org:5000"
 LINE_BUFFER_LENGTH = 10
+
+JOYSTICK_READ_TIME = 0.8  # time between two joystick state read
+MOTOR_SLEEP_TIME = 0.01   # time to sleep between two motor steps
+SLOW_STEPS = 3            # number of steps in slow mode (when joystick is not in the end)
+                          # 3 steps = (200/360/51)*3 ~= 0.106 degree
+
+DEBUG = False
+
+button = Button(17)
+
 
 reset_pin = digitalio.DigitalInOut(board.D4)
 reset_pin.switch_to_output()
@@ -30,6 +40,41 @@ def reset_oled():
    reset_pin.value = True
    time.sleep(0.2)
 
+class TelescopeMotor:
+    def __init__(self, red_pin, blue_pin, green_pin, black_pin, name):
+        self.name = name
+        self.devices = [OutputDevice(red_pin),    # red   (1st coil, +)
+                        OutputDevice(blue_pin),   # blue  (1st coil, -)
+                        OutputDevice(green_pin),  # green (2nd coil, +)
+                        OutputDevice(black_pin)]  # black (2nd coil, -)
+        self.current_phase = 0
+        self.phases = [[1, 0, 0, 0],
+                       [0, 0, 1, 0],
+                       [0, 1, 0, 0],
+                       [0, 0, 0, 1]]
+        self.reinit()
+ 
+    def reinit(self):       
+        for i in range(4):
+            self.devices[i].off()
+
+    def update_output(self):
+        if DEBUG:
+            print(f'{self.name} red: {self.phases[self.current_phase][0]}')
+            print(f'{self.name} blue: {self.phases[self.current_phase][1]}')
+            print(f'{self.name} green: {self.phases[self.current_phase][2]}')
+            print(f'{self.name} black: {self.phases[self.current_phase][3]}')
+        for i in range(4):
+            if self.devices[i].value != self.phases[self.current_phase][i]:
+                self.devices[i].toggle()
+
+    def forward(self):
+        self.current_phase = (self.current_phase + 1) % 4;
+        self.update_output()   
+
+    def backward(self):
+        self.current_phase = (self.current_phase - 1) % 4;
+        self.update_output()   
 
 
 class TelescopeOled:
@@ -192,6 +237,52 @@ redraw_thread.daemon = True
 print("Starting oled refresh thread")
 redraw_thread.start()
 
+
+motor_x = TelescopeMotor(14, 15, 18, 23, "x")
+motor_y = TelescopeMotor(24, 25, 7, 12, "y")
+
+def motor_control():
+    global motor_x
+    global motor_y
+    joystick_x = MCP3008(channel=6)
+    joystick_y = MCP3008(channel=7)
+
+    while True:
+        try:
+            x = joystick_x.value
+            y = joystick_y.value
+            fast_steps = int(JOYSTICK_READ_TIME / MOTOR_SLEEP_TIME)
+            if DEBUG:
+                print(f'x: {x}   y: {y}')
+            for i in range(fast_steps): 
+                if x < 0.1 or (x < 0.4 and i < SLOW_STEPS):
+                    motor_x.forward()
+                if x > 0.9 or (x > 0.6 and i < SLOW_STEPS):
+                    motor_x.backward()
+                if y < 0.1 or (y < 0.4 and i < SLOW_STEPS):
+                    motor_y.forward()
+                if y > 0.9 or (y > 0.6 and i < SLOW_STEPS):
+                    motor_y.backward()
+                time.sleep(MOTOR_SLEEP_TIME)
+        except Exception as e:
+            print(str(e))
+            time.sleep(1)
+
+def motor_shutdown():
+    global motor_x
+    global motor_y
+    motor_x.reinit()
+    motor_y.reinit()
+
+button.when_pressed = motor_shutdown
+
+motor_control_thread = threading.Thread(target=motor_control)
+motor_control_thread.daemon = True
+print("Starting motor control thread")
+motor_control_thread.start()
+
+
+
 def sendMessageToBoard(hostId, ip, message):
     requests.post(PI_BOARD_HOST+'/messages/'+str(hostId), json={"ip": ip, "message": message})
 
@@ -210,4 +301,8 @@ while True:
         for line in fifo:
             lines.append(line)
             sendMessageToBoard(hostId, ip, line)
+
+
+
+
 
